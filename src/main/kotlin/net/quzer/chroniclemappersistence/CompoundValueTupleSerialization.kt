@@ -6,12 +6,16 @@ import net.openhft.lang.io.serialization.BytesMarshaller
 
 class CompoundValueTupleSerialization : BytesMarshaller<CompoundValueTuple<CarValue>> {
     override fun write(bytes: Bytes, e: CompoundValueTuple<CarValue>) {
-        bytes.writeList(e.attributeValues.toList())
+        bytes.writeInt(e.attributeValues.count())
+        e.attributeValues.forEach { bytes.writeUTF(it as String) }
     }
 
     override fun read(bytes: Bytes): CompoundValueTuple<CarValue> {
-        val attributeValueList = mutableListOf<Any>()
-        bytes.readList(attributeValueList, Any::class.java)
+        val count = bytes.readInt()
+        val attributeValueList = mutableListOf<String?>()
+        for (i in 0 until count) {
+            attributeValueList.add(bytes.readUTF())
+        }
         return CompoundValueTuple(attributeValueList)
     }
 

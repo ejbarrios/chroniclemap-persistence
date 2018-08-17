@@ -5,6 +5,7 @@ import com.googlecode.cqengine.index.compound.CompoundIndex
 import com.googlecode.cqengine.index.unique.UniqueIndex
 import com.googlecode.cqengine.persistence.wrapping.WrappingPersistence
 import com.googlecode.cqengine.query.QueryFactory.*
+import com.googlecode.cqengine.query.option.QueryOptions
 import net.openhft.chronicle.set.ChronicleSet
 import net.openhft.chronicle.set.ChronicleSetBuilder
 
@@ -17,13 +18,13 @@ fun main(args: Array<String>) {
 
     val cqe = ConcurrentIndexedCollection<CarValue>(WrappingPersistence.aroundCollectionOnPrimaryKey<CarValue, Long>(set, id))
     cqe.addIndex(UniqueIndex.onAttribute(id))
-    cqe.addIndex(
-            CompoundIndex.onAttributes(
-                    CompoundIndexMapFactory(),
-                    StoredSetBasedResultSetFactory(),
-                    make, model, features
-            )
+    val compoundIndex = CompoundIndex.onAttributes(
+            CompoundIndexMapFactory(),
+            StoredSetBasedResultSetFactory(),
+            make, model, features
     )
+
+    cqe.addIndex(compoundIndex)
     cqe.addAll(listOf(
             CarValueBuilder.getCar(2, "toyota", "prius", listOf("silver", "fwd", "hybrid")),
             CarValueBuilder.getCar(3, "honda", "civic", listOf("white", "fwd")),
@@ -31,6 +32,9 @@ fun main(args: Array<String>) {
             CarValueBuilder.getCar(5, "tesla", "model3", listOf("red", "awd", "electric"))
     ))
 
+    compoundIndex.getKeysAndValues(QueryOptions()).forEach {
+        println("${it.key} - ${it.value}")
+    }
     val results = cqe.retrieve(and(equal(make, "ford"), equal(model, "focus"), equal(features, "black")))
 
     for (c in results) {

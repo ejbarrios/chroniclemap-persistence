@@ -11,9 +11,12 @@ class StoredResultSetSerialization : BytesMarshaller<StoredResultSet<CarValue>> 
     }
 
     override fun read(bytes: Bytes, e: StoredResultSet<CarValue>?): StoredResultSet<CarValue> {
+        val count = bytes.readInt()
         val retrieveCost = bytes.readInt()
-        val cars = mutableListOf<CarValue>()
-        bytes.readList(mutableListOf(), CarValue::class.java)
+        val cars = mutableListOf<CarValue?>()
+        for(i in 0 until count) {
+            cars.add(bytes.readObject(CarValue::class.java))
+        }
 
 
         val resultSet: StoredSetBasedResultSet<CarValue> = when {
@@ -29,8 +32,9 @@ class StoredResultSetSerialization : BytesMarshaller<StoredResultSet<CarValue>> 
 
     override fun write(bytes: Bytes, e: StoredResultSet<CarValue>) {
         val resultSet = e as StoredSetBasedResultSet<CarValue>
+        bytes.write(resultSet.size())
         bytes.write(resultSet.mergeCost)
-        bytes.writeList(resultSet.toList())
+        resultSet.forEach { bytes.writeObject(it) }
     }
 
 }
